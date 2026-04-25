@@ -36,7 +36,7 @@ export default function OrderPage() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` },
-        (payload) => {
+        (payload: any) => {
           setOrder(payload.new);
           if (payload.new.status === 'confirmed') {
             fetchCoupon(payload.new.coupon_id);

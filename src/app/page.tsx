@@ -19,9 +19,9 @@ export default function Home() {
       
       if (data) {
         setStock({
-          300: data.filter(c => c.value === 300).length,
-          500: data.filter(c => c.value === 500).length,
-          1000: data.filter(c => c.value === 1000).length,
+          300: data.filter((c: any) => c.value === 300).length,
+          500: data.filter((c: any) => c.value === 500).length,
+          1000: data.filter((c: any) => c.value === 1000).length,
         });
       }
     }

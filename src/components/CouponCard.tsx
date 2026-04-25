@@ -24,7 +24,7 @@ export const CouponCard: React.FC<CouponCardProps> = ({ value, stock }) => {
           <div className="w-12 h-12 bg-grab/10 rounded-2xl flex items-center justify-center">
             <Ticket className="text-grab w-6 h-6" />
           </div>
-          {price.bulk && (
+          {(price as any).bulk && (
             <div className="bg-yellow-50 text-yellow-700 text-[10px] uppercase font-black px-3 py-1 rounded-full tracking-widest border border-yellow-100">
               Bulk Save
             </div>
@@ -48,10 +48,10 @@ export const CouponCard: React.FC<CouponCardProps> = ({ value, stock }) => {
               {stock > 0 ? `${stock} codes` : "Sold Out"}
             </span>
           </div>
-          {price.bulk && (
+          {(price as any).bulk && (
             <div className="pt-4 mt-4 border-t border-slate-50">
               <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                Best value: <span className="text-slate-900 font-bold">{price.bulk.qty} pcs</span> for only <span className="text-grab font-bold">{price.bulk.price.toLocaleString()} THB</span>.
+                Best value: <span className="text-slate-900 font-bold">{(price as any).bulk.qty} pcs</span> for only <span className="text-grab font-bold">{(price as any).bulk.price.toLocaleString()} THB</span>.
               </p>
             </div>
           )}

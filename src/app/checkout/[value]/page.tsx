@@ -4,8 +4,9 @@ import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-export default function CheckoutPage({ params }: { params: { value: string } }) {
-  const value = parseInt(params.value);
+export default async function CheckoutPage({ params }: { params: Promise<{ value: string }> }) {
+  const { value: valueParam } = await params;
+  const value = parseInt(valueParam);
   
   if (![300, 500, 1000].includes(value)) {
     return notFound();

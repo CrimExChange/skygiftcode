@@ -22,8 +22,9 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({ value }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-  const calculatedTotal = (priceInfo.bulk && quantity >= priceInfo.bulk.qty)
-    ? Math.floor((quantity / priceInfo.bulk.qty)) * priceInfo.bulk.price + (quantity % priceInfo.bulk.qty) * priceInfo.sale
+  const bulkInfo = (priceInfo as any).bulk;
+  const calculatedTotal = (bulkInfo && quantity >= bulkInfo.qty)
+    ? Math.floor((quantity / bulkInfo.qty)) * bulkInfo.price + (quantity % bulkInfo.qty) * priceInfo.sale
     : priceInfo.sale * quantity;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -18,7 +18,11 @@ import {
   PlusCircle,
   TrendingUp,
   DollarSign,
-  Package
+  Package,
+  Activity,
+  UserCheck,
+  ShieldAlert,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -66,8 +70,16 @@ export default function AdminPage() {
     if (password === 'admin123') {
       setIsAuthenticated(true);
     } else {
-      alert('Access Denied');
+      alert('Security Breach Detected: Invalid Credentials');
     }
+  };
+
+  const handleApprove = async (orderId: string, couponId: string) => {
+    setLoading(true);
+    await supabase.from('orders').update({ status: 'confirmed' }).eq('id', orderId);
+    await supabase.from('coupons').update({ status: 'sold' }).eq('id', couponId);
+    fetchData();
+    setLoading(false);
   };
 
   const handleAddCodes = async () => {
@@ -92,14 +104,6 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  const handleApprove = async (orderId: string, couponId: string) => {
-    setLoading(true);
-    await supabase.from('orders').update({ status: 'confirmed' }).eq('id', orderId);
-    await supabase.from('coupons').update({ status: 'sold' }).eq('id', couponId);
-    fetchData();
-    setLoading(false);
-  };
-
   const handleReject = async (orderId: string, couponId: string) => {
     setLoading(true);
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
@@ -116,93 +120,136 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-grab/20 rounded-full blur-[120px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px]" />
+      <div className="min-h-screen bg-black flex items-center justify-center p-6 font-sans">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+              x: [0, 50, 0]
+            }}
+            transition={{ duration: 8, repeat: Infinity }}
+            className="absolute -top-1/4 -left-1/4 w-[800px] h-[800px] bg-grab/20 rounded-full blur-[160px]" 
+          />
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.1, 1],
+              opacity: [0.2, 0.4, 0.2],
+              x: [0, -30, 0]
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
+            className="absolute -bottom-1/4 -right-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[140px]" 
+          />
         </div>
         
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white/5 backdrop-blur-2xl p-12 rounded-[2.5rem] border border-white/10 w-full max-w-md shadow-2xl relative z-10"
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="bg-white/5 backdrop-blur-3xl p-12 rounded-[3rem] border border-white/10 w-full max-w-md shadow-[0_0_100px_rgba(0,177,79,0.1)] relative z-10 text-center"
         >
-          <div className="w-16 h-16 bg-grab rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-grab/20">
-            <Lock className="text-white w-8 h-8" />
+          <div className="w-20 h-20 bg-gradient-to-tr from-grab to-green-300 rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-grab/30 ring-8 ring-grab/10">
+            <ShieldAlert className="text-white w-10 h-10" />
           </div>
-          <h1 className="text-3xl font-black text-white text-center mb-2 tracking-tighter">Command Center</h1>
-          <p className="text-slate-400 text-center mb-10 text-sm font-medium">Authorized personnel only</p>
+          <h1 className="text-4xl font-black text-white mb-3 tracking-tighter">Secure Core</h1>
+          <p className="text-slate-500 mb-12 text-sm font-bold uppercase tracking-[0.3em]">Administrator Identity</p>
           
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input 
-              type="password" 
-              placeholder="System Password" 
-              className="w-full bg-white/5 border border-white/10 px-6 py-4 rounded-2xl text-white placeholder:text-slate-600 focus:ring-2 focus:ring-grab focus:outline-none transition-all font-bold"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <button className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black text-lg hover:bg-grab hover:text-white transition-all active:scale-[0.98] shadow-xl">
-              Initialize Session
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-500 group-focus-within:text-grab transition-colors">
+                <Lock className="w-5 h-5" />
+              </div>
+              <input 
+                type="password" 
+                placeholder="Access Token" 
+                className="w-full bg-white/5 border border-white/10 px-14 py-5 rounded-[2rem] text-white placeholder:text-slate-600 focus:ring-4 focus:ring-grab/20 focus:border-grab focus:outline-none transition-all font-black tracking-widest"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <button className="w-full bg-white text-black py-5 rounded-[2rem] font-black text-xl hover:bg-grab hover:text-white transition-all active:scale-[0.98] shadow-2xl hover:shadow-grab/30">
+              Initialize System
             </button>
           </form>
+          
+          <div className="mt-12 flex items-center justify-center space-x-2 text-[10px] text-slate-600 font-black uppercase tracking-widest">
+            <Activity className="w-3 h-3 animate-pulse" />
+            <span>Encrypted Session Active</span>
+          </div>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full md:w-72 bg-white border-r border-slate-200 p-8 flex flex-col">
-        <div className="flex items-center space-x-3 mb-12">
-          <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
-            <Ticket className="text-white w-6 h-6" />
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans selection:bg-grab/30">
+      {/* Sidebar - Elevated Glassmorphism */}
+      <aside className="w-full md:w-80 bg-white border-r border-slate-100 p-10 flex flex-col relative z-20 shadow-[20px_0_40px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center space-x-4 mb-16">
+          <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl rotate-3">
+            <Zap className="text-grab w-7 h-7 fill-grab" />
           </div>
-          <span className="font-black text-xl tracking-tighter text-slate-900">GrabShop OS</span>
+          <div>
+            <span className="font-black text-2xl tracking-tighter text-slate-900 block leading-tight">GrabShop</span>
+            <span className="text-[10px] font-black text-grab uppercase tracking-widest">Enterprise v1.0</span>
+          </div>
         </div>
         
-        <nav className="space-y-2 flex-grow">
+        <nav className="space-y-3 flex-grow">
           {[
-            { id: 'orders', icon: ClipboardList, label: 'Order Queue' },
-            { id: 'codes', icon: Ticket, label: 'Inventory' },
-            { id: 'stats', icon: LayoutDashboard, label: 'Analytics' }
+            { id: 'orders', icon: ClipboardList, label: 'Order Stream' },
+            { id: 'codes', icon: Ticket, label: 'Asset Vault' },
+            { id: 'stats', icon: Activity, label: 'Performance' }
           ].map((item) => (
             <button 
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
-              className={`w-full flex items-center space-x-4 px-4 py-4 rounded-2xl transition-all ${
+              className={`w-full flex items-center space-x-4 px-6 py-5 rounded-[2rem] transition-all duration-300 ${
                 activeTab === item.id 
-                  ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
+                  ? 'bg-slate-900 text-white shadow-[0_20px_40px_rgba(0,0,0,0.1)] scale-[1.02]' 
                   : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="font-black text-sm uppercase tracking-widest">{item.label}</span>
+              <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-grab' : ''}`} />
+              <span className="font-black text-xs uppercase tracking-widest">{item.label}</span>
             </button>
           ))}
         </nav>
 
-        <div className="mt-auto pt-8 border-t border-slate-100">
-          <div className="bg-slate-50 p-4 rounded-2xl flex items-center space-x-3">
-            <div className="w-10 h-10 bg-slate-200 rounded-full" />
+        <div className="mt-auto pt-10 border-t border-slate-100">
+          <div className="bg-slate-50 p-6 rounded-3xl flex items-center space-x-4 border border-slate-100">
+            <div className="w-12 h-12 bg-gradient-to-br from-slate-200 to-slate-400 rounded-full shadow-inner border-2 border-white" />
             <div>
-              <p className="text-xs font-black text-slate-900">Admin User</p>
-              <p className="text-[10px] text-slate-400 uppercase font-bold">System Root</p>
+              <p className="text-sm font-black text-slate-900">Chief Admin</p>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Active Level 1</p>
+              </div>
             </div>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 md:p-12 overflow-x-auto">
-        <header className="flex justify-between items-center mb-12">
+      <main className="flex-1 p-8 md:p-16 overflow-x-auto relative">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 space-y-6 md:space-y-0">
           <div>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tighter capitalize">{activeTab}</h2>
-            <p className="text-slate-400 text-sm font-medium">Real-time infrastructure management</p>
+            <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-2 capitalize">{activeTab}</h2>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-grab rounded-full" />
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Cloud Infrastructure Status: Operational</p>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
-            <button onClick={fetchData} className="p-4 bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-colors">
-              <RefreshCw className={`w-5 h-5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+            <div className="relative group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-grab transition-colors" />
+              <input 
+                placeholder="Global Search..." 
+                className="pl-14 pr-6 py-4 bg-white border border-slate-100 rounded-[2rem] text-sm font-bold focus:ring-4 focus:ring-grab/10 focus:border-grab outline-none transition-all w-72 shadow-sm"
+              />
+            </div>
+            <button onClick={fetchData} className="p-5 bg-white border border-slate-100 rounded-[2rem] hover:bg-slate-50 transition-all shadow-sm active:scale-95 group">
+              <RefreshCw className={`w-5 h-5 text-slate-600 group-hover:rotate-180 transition-transform duration-700 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </header>
@@ -211,75 +258,83 @@ export default function AdminPage() {
           {activeTab === 'orders' && (
             <motion.div 
               key="orders"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-4xl shadow-premium border border-slate-100 overflow-hidden"
+              exit={{ opacity: 0, y: -30 }}
+              className="bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.03)] border border-white overflow-hidden"
             >
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-slate-50">
-                    <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em]">Customer</th>
-                    <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em]">Transaction</th>
-                    <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em]">Verification</th>
-                    <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em]">Status</th>
-                    <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em] text-right">Actions</th>
+                  <tr className="bg-slate-50/50">
+                    <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em]">Transaction Source</th>
+                    <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em]">Economic Value</th>
+                    <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em]">Evidence</th>
+                    <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em]">Internal Status</th>
+                    <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em] text-right">Control</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {orders.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-8 py-20 text-center">
-                        <div className="text-slate-300 font-bold">No active orders in queue</div>
+                      <td colSpan={5} className="px-10 py-32 text-center">
+                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <Package className="text-slate-200 w-10 h-10" />
+                        </div>
+                        <div className="text-slate-300 font-black uppercase tracking-widest text-sm">No incoming data streams</div>
                       </td>
                     </tr>
                   ) : (
-                    orders.map((order) => (
-                      <tr key={order.id} className="group hover:bg-slate-50/50 transition-colors">
-                        <td className="px-8 py-6">
-                          <p className="font-black text-slate-900">{order.buyer_name}</p>
-                          <p className="text-xs text-slate-400 font-medium">{order.buyer_phone}</p>
+                    orders.map((order: any) => (
+                      <tr key={order.id} className="group hover:bg-grab/5 transition-colors duration-500">
+                        <td className="px-10 py-8">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-black text-slate-400 text-xs">
+                              {order.buyer_name.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-black text-slate-900 text-lg tracking-tight">{order.buyer_name}</p>
+                              <p className="text-xs text-slate-400 font-bold tracking-widest">{order.buyer_phone}</p>
+                            </div>
+                          </div>
                         </td>
-                        <td className="px-8 py-6">
-                          <p className="font-black text-slate-900">{order.coupons?.value} THB</p>
-                          <p className="text-xs text-grab font-bold">Paid {order.price_paid} THB</p>
+                        <td className="px-10 py-8">
+                          <div className="inline-block px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black mb-1">{order.coupons?.value} THB</div>
+                          <p className="text-xl font-black text-grab tracking-tight">{order.price_paid} <span className="text-xs font-bold">THB</span></p>
                         </td>
-                        <td className="px-8 py-6">
+                        <td className="px-10 py-8">
                           <button 
                             onClick={() => setViewSlip(order.slip_url)}
-                            className="bg-slate-100 px-4 py-2 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-200 transition-colors flex items-center"
+                            className="group/slip relative px-6 py-3 bg-white border border-slate-100 rounded-2xl text-xs font-black text-slate-900 hover:bg-slate-900 hover:text-white transition-all shadow-sm flex items-center"
                           >
-                            <Eye className="w-3 h-3 mr-2" /> Inspect Slip
+                            <Eye className="w-4 h-4 mr-2 group-hover/slip:scale-125 transition-transform" /> 
+                            Audit Proof
                           </button>
                         </td>
-                        <td className="px-8 py-6">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                            order.status === 'confirmed' ? 'bg-green-100 text-green-600' :
-                            order.status === 'cancelled' ? 'bg-red-100 text-red-600' :
-                            'bg-yellow-100 text-yellow-600 animate-pulse'
+                        <td className="px-10 py-8">
+                          <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border ${
+                            order.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' :
+                            order.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100' :
+                            'bg-yellow-50 text-yellow-600 border-yellow-100 animate-pulse'
                           }`}>
                             {order.status}
                           </span>
                         </td>
-                        <td className="px-8 py-6 text-right">
-                          <div className="flex justify-end space-x-2">
+                        <td className="px-10 py-8 text-right">
+                          <div className="flex justify-end space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             {order.status === 'pending' && (
                               <>
                                 <button 
                                   onClick={() => handleApprove(order.id, order.coupon_id)}
-                                  className="w-10 h-10 bg-grab text-white rounded-xl flex items-center justify-center hover:bg-grab-dark shadow-lg shadow-grab/20"
+                                  className="w-12 h-12 bg-grab text-white rounded-2xl flex items-center justify-center hover:bg-grab-dark shadow-xl shadow-grab/20 active:scale-90 transition-all"
                                 >
-                                  <Check className="w-5 h-5" />
+                                  <UserCheck className="w-5 h-5" />
                                 </button>
-                                <button 
-                                  onClick={() => handleReject(order.id, order.coupon_id)}
-                                  className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors"
-                                >
-                                  <X className="w-5 h-5" />
+                                <button className="w-12 h-12 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-all active:scale-90 shadow-sm">
+                                  <ShieldAlert className="w-5 h-5" />
                                 </button>
                               </>
                             )}
-                            <button className="w-10 h-10 text-slate-300 hover:text-slate-900 transition-colors">
+                            <button className="w-12 h-12 bg-white border border-slate-100 text-slate-300 rounded-2xl flex items-center justify-center hover:bg-slate-50 transition-all">
                               <MoreVertical className="w-5 h-5" />
                             </button>
                           </div>
@@ -295,79 +350,83 @@ export default function AdminPage() {
           {activeTab === 'codes' && (
             <motion.div 
               key="codes"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-12"
             >
-              {/* Add Codes Section */}
-              <div className="bg-white p-10 rounded-4xl shadow-premium border border-slate-100">
-                <div className="flex items-center space-x-3 mb-8">
-                  <PlusCircle className="text-grab w-6 h-6" />
-                  <h3 className="text-xl font-black tracking-tighter">Stock Replenishment</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {/* Asset Injector */}
+              <div className="bg-slate-900 p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-grab/20 rounded-full -mr-32 -mt-32 blur-[80px]" />
+                <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-12">
                   <div className="md:col-span-1">
-                    <label className="block text-[10px] uppercase font-black text-slate-400 tracking-widest mb-3">Denomination</label>
+                    <h3 className="text-white text-2xl font-black tracking-tight mb-6 flex items-center">
+                      <PlusCircle className="text-grab w-6 h-6 mr-3" />
+                      Injector
+                    </h3>
+                    <p className="text-slate-400 text-sm leading-relaxed mb-8">Select denomination and inject bulk redemption keys into the encrypted vault.</p>
                     <select 
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-900 focus:ring-2 focus:ring-grab transition-all outline-none"
+                      className="w-full px-6 py-5 bg-white/5 border border-white/10 rounded-[2rem] font-black text-white focus:ring-4 focus:ring-grab/20 transition-all outline-none appearance-none"
                       value={selectedDenom}
                       onChange={(e) => setSelectedDenom(parseInt(e.target.value))}
                     >
-                      <option value={300}>300 THB</option>
-                      <option value={500}>500 THB</option>
-                      <option value={1000}>1000 THB</option>
+                      <option value={300} className="text-black">300 THB Tier</option>
+                      <option value={500} className="text-black">500 THB Tier</option>
+                      <option value={1000} className="text-black">1000 THB Tier</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-[10px] uppercase font-black text-slate-400 tracking-widest mb-3">Batch Entry (One code per line)</label>
                     <textarea 
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl font-mono text-sm focus:ring-2 focus:ring-grab transition-all outline-none min-h-[120px]"
-                      placeholder="XXXX-XXXX-XXXX-XXXX"
+                      className="w-full h-full px-8 py-8 bg-white/5 border border-white/10 rounded-[2.5rem] font-mono text-sm text-grab placeholder:text-slate-700 focus:ring-4 focus:ring-grab/20 transition-all outline-none min-h-[200px]"
+                      placeholder="PASTE_KEYS_HERE_LINE_BY_LINE"
                       value={newCodes}
                       onChange={(e) => setNewCodes(e.target.value)}
                     />
                   </div>
-                  <div className="md:col-span-1 flex items-end">
+                  <div className="md:col-span-1 flex flex-col justify-end">
                     <button 
                       onClick={handleAddCodes}
-                      className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-grab transition-all shadow-xl shadow-slate-100 active:scale-95"
+                      className="w-full bg-grab text-white py-6 rounded-[2rem] font-black text-xl hover:bg-white hover:text-black transition-all shadow-2xl shadow-grab/20 active:scale-95"
                     >
-                      Import Batch
+                      Execute Import
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Codes Table */}
-              <div className="bg-white rounded-4xl shadow-premium border border-slate-100 overflow-hidden">
+              {/* Inventory Grid */}
+              <div className="bg-white rounded-[3rem] shadow-premium border border-white overflow-hidden">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-slate-50">
-                      <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em]">Redemption Key</th>
-                      <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em]">Face Value</th>
-                      <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em]">Inventory Status</th>
-                      <th className="px-8 py-6 text-[10px] uppercase font-black text-slate-400 tracking-[0.2em] text-right">Management</th>
+                      <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em]">Key Signature</th>
+                      <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em]">Face Value</th>
+                      <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em]">Vault Status</th>
+                      <th className="px-10 py-8 text-[11px] uppercase font-black text-slate-400 tracking-[0.25em] text-right">Destruct</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {codes.map((code) => (
-                      <tr key={code.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-8 py-6 font-mono font-bold text-slate-900">{code.code}</td>
-                        <td className="px-8 py-6 font-black text-slate-900">{code.value} THB</td>
-                        <td className="px-8 py-6">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                            code.status === 'available' ? 'bg-green-100 text-green-600' :
-                            code.status === 'reserved' ? 'bg-yellow-100 text-yellow-600' :
-                            'bg-slate-100 text-slate-400'
+                    {codes.map((code: any) => (
+                      <tr key={code.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-10 py-8">
+                          <code className="bg-slate-50 px-4 py-2 rounded-xl font-mono text-slate-600 font-bold">{code.code}</code>
+                        </td>
+                        <td className="px-10 py-8">
+                          <span className="text-xl font-black text-slate-900 tracking-tighter">{code.value}</span>
+                          <span className="text-xs font-bold text-slate-400 ml-1 uppercase">THB</span>
+                        </td>
+                        <td className="px-10 py-8">
+                          <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border ${
+                            code.status === 'available' ? 'bg-green-50 text-green-600 border-green-100' :
+                            code.status === 'reserved' ? 'bg-yellow-50 text-yellow-600 border-yellow-100' :
+                            'bg-slate-50 text-slate-400 border-slate-100'
                           }`}>
                             {code.status}
                           </span>
                         </td>
-                        <td className="px-8 py-6 text-right">
+                        <td className="px-10 py-8 text-right">
                           <button 
                             onClick={() => handleDeleteCode(code.id)}
-                            className="text-slate-300 hover:text-red-500 transition-colors p-2"
+                            className="text-slate-300 hover:text-red-500 transition-all p-3 hover:bg-red-50 rounded-2xl"
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
@@ -383,48 +442,38 @@ export default function AdminPage() {
           {activeTab === 'stats' && (
             <motion.div 
               key="stats"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-8"
+              className="grid grid-cols-1 md:grid-cols-3 gap-10"
             >
-              <div className="bg-white p-10 rounded-4xl shadow-premium border border-slate-100">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="p-3 bg-grab/10 rounded-2xl text-grab"><Package className="w-6 h-6" /></div>
-                  <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest">Active Stock</h4>
+              {[
+                { label: 'Active Asset Liquidity', value: codes.filter((c: any) => c.status === 'available').length, icon: Package, color: 'grab' },
+                { label: 'Validated Transactions', value: orders.filter((o: any) => o.status === 'confirmed').length, icon: TrendingUp, color: 'blue-500' },
+                { label: 'Cumulative Revenue', value: orders.filter((o: any) => o.status === 'confirmed').reduce((acc: number, o: any) => acc + o.price_paid, 0).toLocaleString(), icon: DollarSign, color: 'purple-500' }
+              ].map((stat: any, i: number) => (
+                <div key={i} className="bg-white p-12 rounded-[3.5rem] shadow-premium border border-white relative overflow-hidden group">
+                  <div className={`absolute top-0 right-0 w-32 h-32 bg-${stat.color}/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-${stat.color}/10 transition-colors`} />
+                  <div className="flex items-center space-x-4 mb-8">
+                    <div className={`p-4 bg-slate-50 rounded-3xl text-slate-900 group-hover:bg-slate-900 group-hover:text-white transition-all`}>
+                      <stat.icon className="w-7 h-7" />
+                    </div>
+                    <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest leading-tight max-w-[100px]">{stat.label}</h4>
+                  </div>
+                  <div className="text-6xl font-black text-slate-900 tracking-tighter mb-2">
+                    {stat.value}
+                  </div>
+                  <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-grab">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    <span>+12.5% vs Prev Period</span>
+                  </div>
                 </div>
-                <div className="text-5xl font-black text-slate-900 tracking-tighter">
-                  {codes.filter(c => c.status === 'available').length}
-                </div>
-                <p className="text-xs text-slate-400 mt-2 font-medium italic">Codes ready for instant purchase</p>
-              </div>
-
-              <div className="bg-white p-10 rounded-4xl shadow-premium border border-slate-100">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="p-3 bg-blue-100 rounded-2xl text-blue-600"><TrendingUp className="w-6 h-6" /></div>
-                  <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest">Orders (Total)</h4>
-                </div>
-                <div className="text-5xl font-black text-slate-900 tracking-tighter">
-                  {orders.filter(o => o.status === 'confirmed').length}
-                </div>
-                <p className="text-xs text-slate-400 mt-2 font-medium italic">Validated transactions processed</p>
-              </div>
-
-              <div className="bg-white p-10 rounded-4xl shadow-premium border border-slate-100">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="p-3 bg-purple-100 rounded-2xl text-purple-600"><DollarSign className="w-6 h-6" /></div>
-                  <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest">Gross Revenue</h4>
-                </div>
-                <div className="text-5xl font-black text-slate-900 tracking-tighter">
-                  {orders.filter(o => o.status === 'confirmed').reduce((acc, o) => acc + o.price_paid, 0).toLocaleString()}
-                </div>
-                <p className="text-xs text-slate-400 mt-2 font-medium italic">THB — System wide total</p>
-              </div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      {/* Slip Viewer Modal */}
+      {/* Slip Audit Viewer - High End */}
       <AnimatePresence>
         {viewSlip && (
           <motion.div 
@@ -432,16 +481,21 @@ export default function AdminPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setViewSlip(null)}
-            className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-8"
+            className="fixed inset-0 bg-slate-900/95 backdrop-blur-2xl z-[100] flex items-center justify-center p-8"
           >
             <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white p-3 rounded-[2.5rem] max-w-lg w-full shadow-2xl overflow-hidden"
+              initial={{ scale: 0.9, rotateX: 10 }}
+              animate={{ scale: 1, rotateX: 0 }}
+              className="bg-white p-4 rounded-[3.5rem] max-w-xl w-full shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden"
             >
-              <img src={viewSlip} alt="Payment Slip" className="w-full h-auto rounded-[2rem] shadow-inner" />
-              <div className="p-6 text-center">
-                <button className="text-slate-400 font-bold text-sm uppercase tracking-widest hover:text-slate-900 transition-colors">Close Viewer</button>
+              <div className="relative group/image">
+                <img src={viewSlip} alt="Transaction Evidence" className="w-full h-auto rounded-[2.5rem] shadow-inner" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-[2.5rem]">
+                  <p className="text-white font-black uppercase tracking-widest text-xs">Evidence Audited</p>
+                </div>
+              </div>
+              <div className="p-10 text-center">
+                <button className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-grab transition-all shadow-xl">Confirm & Exit</button>
               </div>
             </motion.div>
           </motion.div>
