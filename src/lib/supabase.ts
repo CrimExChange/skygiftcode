@@ -19,45 +19,59 @@ const createMockClient = () => {
   }
 
   return {
-    from: (table: string) => ({
-      select: (query: string) => ({
-        eq: (col: string, val: any) => ({
-          order: (col: string, opt: any) => Promise.resolve({ data: getStorage(table).filter((r: any) => r[col] === val) }),
-          single: () => Promise.resolve({ data: getStorage(table).filter((r: any) => r[col] === val)[0] }),
-          limit: (n: number) => Promise.resolve({ data: getStorage(table).filter((r: any) => r[col] === val).slice(0, n) }),
-          Promise: () => Promise.resolve({ data: getStorage(table).filter((r: any) => r[col] === val) }),
+    from: (table: string) => {
+      const getTableData = () => getStorage(table);
+      
+      const queryBuilder = (currentData: any[]): any => ({
+        eq: (col: string, val: any) => queryBuilder(currentData.filter(r => r[col] === val)),
+        in: (col: string, vals: any[]) => queryBuilder(currentData.filter(r => vals.includes(r[col]))),
+        order: (col: string, { ascending = true } = {}) => {
+          const sorted = [...currentData].sort((a, b) => (a[col] > b[col] ? 1 : -1) * (ascending ? 1 : -1));
+          return queryBuilder(sorted);
+        },
+        limit: (n: number) => queryBuilder(currentData.slice(0, n)),
+        select: (query?: string) => queryBuilder(currentData),
+        single: () => Promise.resolve({ data: currentData[0], error: null }),
+        then: (onfulfilled: any) => Promise.resolve({ data: currentData, error: null }).then(onfulfilled)
+      });
+
+      return {
+        select: (query: string = '*') => {
+          let data = getTableData();
+          if (table === 'orders' && query.includes('coupons')) {
+            const coupons = getStorage('coupons');
+            data = data.map((o: any) => ({ ...o, coupons: coupons.find((c: any) => c.id === o.coupon_id) }));
+          }
+          return queryBuilder(data);
+        },
+        insert: (input: any) => {
+          const rows = getTableData();
+          const dataToInsert = Array.isArray(input) ? input : [input];
+          const newRows = dataToInsert.map(row => ({
+            id: Math.random().toString(36).substring(7),
+            created_at: new Date().toISOString(),
+            ...row
+          }));
+          setStorage(table, [...newRows, ...rows]);
+          return queryBuilder(newRows);
+        },
+        update: (row: any) => ({
+          eq: (col: string, val: any) => {
+            const rows = getTableData();
+            const updated = rows.map((r: any) => r[col] === val ? { ...r, ...row } : r);
+            setStorage(table, updated);
+            return Promise.resolve({ data: updated, error: null });
+          }
         }),
-        order: (col: string, opt: any) => Promise.resolve({ data: [...getStorage(table)].sort((a,b) => b.created_at > a.created_at ? 1 : -1) }),
-        single: () => Promise.resolve({ data: getStorage(table)[0] }),
-        Promise: () => Promise.resolve({ data: getStorage(table) }),
-        then: (cb: any) => Promise.resolve({ data: getStorage(table) }).then(cb),
-      }),
-      insert: (row: any) => {
-        const rows = getStorage(table);
-        const newRow = { id: Math.random().toString(), created_at: new Date().toISOString(), ...row };
-        setStorage(table, [newRow, ...rows]);
-        return { 
-          select: () => ({ 
-            single: () => Promise.resolve({ data: newRow }) 
-          }) 
-        };
-      },
-      update: (row: any) => ({
-        eq: (col: string, val: any) => {
-          const rows = getStorage(table);
-          const updated = rows.map((r: any) => r[col] === val ? { ...r, ...row } : r);
-          setStorage(table, updated);
-          return Promise.resolve({ data: updated });
-        }
-      }),
-      delete: () => ({
-        eq: (col: string, val: any) => {
-          const rows = getStorage(table);
-          setStorage(table, rows.filter((r: any) => r[col] !== val));
-          return Promise.resolve({ error: null });
-        }
-      })
-    }),
+        delete: () => ({
+          eq: (col: string, val: any) => {
+            const rows = getTableData();
+            setStorage(table, rows.filter((r: any) => r[col] !== val));
+            return Promise.resolve({ error: null });
+          }
+        })
+      };
+    },
     storage: {
       from: (bucket: string) => ({
         upload: (path: string, file: File) => Promise.resolve({ data: { path }, error: null }),

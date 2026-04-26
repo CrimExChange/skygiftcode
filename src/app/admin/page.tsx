@@ -22,9 +22,11 @@ import {
   Activity,
   UserCheck,
   ShieldAlert,
-  Zap
+  Zap,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRef } from 'react';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -36,6 +38,7 @@ export default function AdminPage() {
   const [selectedDenom, setSelectedDenom] = useState<number>(300);
   const [loading, setLoading] = useState(false);
   const [viewSlip, setViewSlip] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -85,23 +88,76 @@ export default function AdminPage() {
   const handleAddCodes = async () => {
     if (!newCodes.trim()) return;
     setLoading(true);
-    const codesList = newCodes.split('\n').map(c => c.trim()).filter(c => c);
     
-    const insertData = codesList.map(code => ({
-      code,
-      value: selectedDenom,
-      status: 'available'
-    }));
+    // 1. Clean and unique list from input
+    const inputCodes = newCodes.split('\n')
+      .map(c => c.trim())
+      .filter(c => c);
+    
+    const uniqueInputCodes = Array.from(new Set(inputCodes));
+    
+    if (uniqueInputCodes.length < inputCodes.length) {
+      console.log('Filtered out internal duplicates');
+    }
 
-    const { error } = await supabase.from('coupons').insert(insertData);
-    
-    if (error) {
-      alert('Error adding codes: ' + error.message);
-    } else {
-      setNewCodes('');
-      fetchData();
+    try {
+      // 2. Check duplicates in Database
+      const { data: existingData, error: fetchError } = await supabase
+        .from('coupons')
+        .select('code')
+        .in('code', uniqueInputCodes);
+
+      if (fetchError) throw fetchError;
+
+      const existingCodes = new Set(existingData?.map((d: any) => d.code) || []);
+      const finalCodes = uniqueInputCodes.filter(code => !existingCodes.has(code));
+
+      if (finalCodes.length === 0) {
+        alert('All codes already exist in the database!');
+        setLoading(false);
+        return;
+      }
+
+      if (finalCodes.length < uniqueInputCodes.length) {
+        if (!confirm(`${uniqueInputCodes.length - finalCodes.length} codes already exist. Add only the ${finalCodes.length} new codes?`)) {
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 3. Insert
+      const insertData = finalCodes.map(code => ({
+        code,
+        value: selectedDenom,
+        status: 'available'
+      }));
+
+      const { error } = await supabase.from('coupons').insert(insertData);
+      
+      if (error) {
+        alert('Error adding codes: ' + error.message);
+      } else {
+        alert(`Successfully injected ${finalCodes.length} keys!`);
+        setNewCodes('');
+        fetchData();
+      }
+    } catch (err: any) {
+      alert('Operation failed: ' + err.message);
     }
     setLoading(false);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setNewCodes(content);
+      e.target.value = '';
+    };
+    reader.readAsText(file);
   };
 
   const handleReject = async (orderId: string, couponId: string) => {
@@ -373,6 +429,23 @@ export default function AdminPage() {
                       <option value={500} className="text-black">500 THB Tier</option>
                       <option value={1000} className="text-black">1000 THB Tier</option>
                     </select>
+
+                    <div className="mt-6">
+                      <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        accept=".txt"
+                        className="hidden"
+                      />
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:bg-white/10 hover:text-white transition-all text-xs font-black uppercase tracking-widest"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Load Text File</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="md:col-span-2">
                     <textarea 
